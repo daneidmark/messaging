@@ -1,5 +1,6 @@
 package se.nackademin.messaging.business;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Binding;
@@ -39,6 +40,14 @@ public class RabbitTest {
         rabbitTemplate = new RabbitTemplate(connectionFactory);
     }
 
+    @AfterEach
+    void tearDown() {
+        rabbitAdmin.deleteQueue("for-test-only-1");
+        rabbitAdmin.deleteQueue("for-test-only-2");
+        rabbitAdmin.deleteExchange("my-exchange-1");
+        rabbitAdmin.deleteExchange("my-exchange-2");
+    }
+
     @Test
     void uppgift_1_skicka_och_ta_emot_ett_meddelande() {
         // Kommer ni ihåg från föreläsningen. En exchange är dit vi publicerar saker. På en exchange kan vi koppla en
@@ -46,16 +55,17 @@ public class RabbitTest {
         // en Binding. Låt oss skapa dessa i detta test!
 
         // Skapa en exhange
-        // rabbitAdmin.declareExchange(new FanoutExchange("my-exchange-1"));
+        rabbitAdmin.declareExchange(new FanoutExchange("my-exchange-1"));
         // Skapa en queue
-        // rabbitAdmin.declareQueue(new Queue("for-test-only-1"));
+        rabbitAdmin.declareQueue(new Queue("for-test-only-1"));
         // Skapa en binding
-        // rabbitAdmin.declareBinding(new Binding("for-test-only-1", Binding.DestinationType.QUEUE, "my-exchange-1", "routing-key-is-not-used-for-fanout-but-required", Map.of()));
+        rabbitAdmin.declareBinding(new Binding("for-test-only-1", Binding.DestinationType.QUEUE, "my-exchange-1", "routing-key-is-not-used-for-fanout-but-required", Map.of()));
         // Produce message på exchange
-        // rabbitTemplate.convertAndSend("my-exchange-1", "", "Hej Hej");
+        rabbitTemplate.convertAndSend("my-exchange-1", "", "Hej Hej");
         // Consume message på queue
-        // Message message = rabbitTemplate.receive("for-test-only-1", 4000);
-        // assertEquals(new String(message.getBody()), "Hej Hej");
+        Message message = rabbitTemplate.receive("for-test-only-1", 4000);
+        assertEquals(new String(message.getBody()), "Hej Hej");
+
     }
 
     @Test
@@ -66,11 +76,26 @@ public class RabbitTest {
 
         // Skapa en FanoutExchange
         // Skapa två Queues med olika namn
+        rabbitAdmin.declareExchange(new FanoutExchange("my-exchange-1"));
+        rabbitAdmin.declareQueue(new Queue("for-test-only-1"));
+        rabbitAdmin.declareQueue(new Queue("for-test-only-2"));
+        rabbitAdmin.declareBinding(new Binding("for-test-only-1", Binding.DestinationType.QUEUE, "my-exchange-1", "routing-key-is-not-used-for-fanout-but-required", Map.of()));
+        rabbitAdmin.declareBinding(new Binding("for-test-only-2", Binding.DestinationType.QUEUE, "my-exchange-1", "routing-key-is-not-used-for-fanout-but-required", Map.of()));
+        rabbitTemplate.convertAndSend("my-exchange-1", "", "Hej Hej");
+        Message message1 = rabbitTemplate.receive("for-test-only-1", 4000);
+        Message message2 = rabbitTemplate.receive("for-test-only-2", 4000);
+        assertEquals(new String(message1.getBody()), "Hej Hej");
+        assertEquals(new String(message2.getBody()), "Hej Hej");
         // Skapa en binding för varje queue till exchangen
         // Skicka ett meddelande
         // ta emot ett på varje kö och se att de är samma.
+
         // asserta att meddelandet har kommit fram till båda köerna
         // asserta att meddelandet är det samma som skickades
+
+        rabbitAdmin.purgeQueue("for-test-only-1");
+        rabbitAdmin.purgeQueue("for-test-only-2");
+
     }
 
     @Test
@@ -85,6 +110,23 @@ public class RabbitTest {
         // Skicka ett meddelande på vardera exchange
         // ta emot ett på varje kö och se att de är olika.
         // asserta att detta är sant
+
+        rabbitAdmin.declareExchange(new FanoutExchange("my-exchange-1"));
+        rabbitAdmin.declareExchange(new FanoutExchange("my-exchange-2"));
+        rabbitAdmin.declareQueue(new Queue("for-test-only-1"));
+        rabbitAdmin.declareQueue(new Queue("for-test-only-2"));
+        rabbitAdmin.declareBinding(new Binding("for-test-only-1", Binding.DestinationType.QUEUE, "my-exchange-1", "routing-key-is-not-used-for-fanout-but-required", Map.of()));
+        rabbitAdmin.declareBinding(new Binding("for-test-only-2", Binding.DestinationType.QUEUE, "my-exchange-2", "routing-key-is-not-used-for-fanout-but-required", Map.of()));
+        rabbitTemplate.convertAndSend("my-exchange-1", "", "Hej Hej");
+        rabbitTemplate.convertAndSend("my-exchange-2", "", "Svej Svej");
+        Message message1 = rabbitTemplate.receive("for-test-only-1", 4000);
+        Message message2 = rabbitTemplate.receive("for-test-only-2", 4000);
+        assertEquals(new String(message1.getBody()), "Hej Hej");
+        assertEquals(new String(message2.getBody()), "Svej Svej");
+
+
+        rabbitAdmin.purgeQueue("for-test-only-1");
+        rabbitAdmin.purgeQueue("for-test-only-2");
     }
 
     @Test
@@ -100,5 +142,20 @@ public class RabbitTest {
         // ta emot ett meddelande och se att det var första som skickades
         // ta emot ett meddelande och se att det var andra som skickades
         // asserta att detta är sant.
+
+        rabbitAdmin.declareExchange(new FanoutExchange("my-exchange-1"));
+        rabbitAdmin.declareExchange(new FanoutExchange("my-exchange-2"));
+        rabbitAdmin.declareQueue(new Queue("for-test-only-1"));
+        rabbitAdmin.declareBinding(new Binding("for-test-only-1", Binding.DestinationType.QUEUE, "my-exchange-1", "routing-key-is-not-used-for-fanout-but-required", Map.of()));
+        rabbitAdmin.declareBinding(new Binding("for-test-only-1", Binding.DestinationType.QUEUE, "my-exchange-2", "routing-key-is-not-used-for-fanout-but-required", Map.of()));
+        rabbitTemplate.convertAndSend("my-exchange-1", "", "Hej Hej");
+        rabbitTemplate.convertAndSend("my-exchange-2", "", "Svej Svej");
+        Message message1 = rabbitTemplate.receive("for-test-only-1", 4000);
+        Message message2 = rabbitTemplate.receive("for-test-only-1", 4000);
+        assertEquals(new String(message1.getBody()), "Hej Hej");
+        assertEquals(new String(message2.getBody()), "Svej Svej");
+
+
+        rabbitAdmin.purgeQueue("for-test-only-1");
     }
 }
