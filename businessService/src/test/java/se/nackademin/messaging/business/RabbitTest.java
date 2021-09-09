@@ -17,6 +17,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Testcontainers
 public class RabbitTest {
@@ -77,24 +78,29 @@ public class RabbitTest {
         // Skapa en FanoutExchange
         // Skapa två Queues med olika namn
         rabbitAdmin.declareExchange(new FanoutExchange("my-exchange-1"));
+
         rabbitAdmin.declareQueue(new Queue("for-test-only-1"));
         rabbitAdmin.declareQueue(new Queue("for-test-only-2"));
+
         rabbitAdmin.declareBinding(new Binding("for-test-only-1", Binding.DestinationType.QUEUE, "my-exchange-1", "routing-key-is-not-used-for-fanout-but-required", Map.of()));
         rabbitAdmin.declareBinding(new Binding("for-test-only-2", Binding.DestinationType.QUEUE, "my-exchange-1", "routing-key-is-not-used-for-fanout-but-required", Map.of()));
+
         rabbitTemplate.convertAndSend("my-exchange-1", "", "Hej Hej");
+
         Message message1 = rabbitTemplate.receive("for-test-only-1", 4000);
         Message message2 = rabbitTemplate.receive("for-test-only-2", 4000);
-        assertEquals(new String(message1.getBody()), "Hej Hej");
-        assertEquals(new String(message2.getBody()), "Hej Hej");
+
+        assertNotNull(message1);
+        assertNotNull(message2);
+        assertEquals("Hej Hej", new String(message1.getBody()));
+        assertEquals("Hej Hej", new String(message2.getBody()));
+
         // Skapa en binding för varje queue till exchangen
         // Skicka ett meddelande
         // ta emot ett på varje kö och se att de är samma.
 
         // asserta att meddelandet har kommit fram till båda köerna
         // asserta att meddelandet är det samma som skickades
-
-        rabbitAdmin.purgeQueue("for-test-only-1");
-        rabbitAdmin.purgeQueue("for-test-only-2");
 
     }
 
@@ -113,10 +119,13 @@ public class RabbitTest {
 
         rabbitAdmin.declareExchange(new FanoutExchange("my-exchange-1"));
         rabbitAdmin.declareExchange(new FanoutExchange("my-exchange-2"));
+
         rabbitAdmin.declareQueue(new Queue("for-test-only-1"));
         rabbitAdmin.declareQueue(new Queue("for-test-only-2"));
+
         rabbitAdmin.declareBinding(new Binding("for-test-only-1", Binding.DestinationType.QUEUE, "my-exchange-1", "routing-key-is-not-used-for-fanout-but-required", Map.of()));
         rabbitAdmin.declareBinding(new Binding("for-test-only-2", Binding.DestinationType.QUEUE, "my-exchange-2", "routing-key-is-not-used-for-fanout-but-required", Map.of()));
+
         rabbitTemplate.convertAndSend("my-exchange-1", "", "Hej Hej");
         rabbitTemplate.convertAndSend("my-exchange-2", "", "Svej Svej");
         Message message1 = rabbitTemplate.receive("for-test-only-1", 4000);
@@ -124,9 +133,6 @@ public class RabbitTest {
         assertEquals(new String(message1.getBody()), "Hej Hej");
         assertEquals(new String(message2.getBody()), "Svej Svej");
 
-
-        rabbitAdmin.purgeQueue("for-test-only-1");
-        rabbitAdmin.purgeQueue("for-test-only-2");
     }
 
     @Test
@@ -148,14 +154,15 @@ public class RabbitTest {
         rabbitAdmin.declareQueue(new Queue("for-test-only-1"));
         rabbitAdmin.declareBinding(new Binding("for-test-only-1", Binding.DestinationType.QUEUE, "my-exchange-1", "routing-key-is-not-used-for-fanout-but-required", Map.of()));
         rabbitAdmin.declareBinding(new Binding("for-test-only-1", Binding.DestinationType.QUEUE, "my-exchange-2", "routing-key-is-not-used-for-fanout-but-required", Map.of()));
+
         rabbitTemplate.convertAndSend("my-exchange-1", "", "Hej Hej");
         rabbitTemplate.convertAndSend("my-exchange-2", "", "Svej Svej");
+
         Message message1 = rabbitTemplate.receive("for-test-only-1", 4000);
         Message message2 = rabbitTemplate.receive("for-test-only-1", 4000);
+
         assertEquals(new String(message1.getBody()), "Hej Hej");
         assertEquals(new String(message2.getBody()), "Svej Svej");
 
-
-        rabbitAdmin.purgeQueue("for-test-only-1");
     }
 }
