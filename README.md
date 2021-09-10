@@ -41,4 +41,11 @@ audit log över alla händelser på alla accounts. Denna är enbart synlig för 
 
 ### Val nummer 2
 Fortsätt i detta projekt och sätt upp två exchanges och två queues. En för AccountOpened och en för AccountDeposited. Se till att det finns två listeners i AuditService och att befintlig funktionalitet fortfarande leker!
+Implementera Withdrawlals.
+Ny endpoint
+Skicka meddelande på kö.
 
+### Val nummer 3
+Utforska Wildfly! 
+1. testa att deploya en app och se att den fungerar. Här kan du använda dig av dockerfilen och docker-compose från föreläsningen om applikationsservar
+2. Testa att implementera JMS https://spring.io/guides/gs/messaging-jms/ och deploya bussiness och audit service till wildfly!
